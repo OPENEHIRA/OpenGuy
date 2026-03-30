@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>OpenGuy — Natural language → real-world control</title>
+  <meta name="description" content="OpenGuy transforms natural language commands into structured robot control instructions. Speak naturally, control precisely."/>
+  <link rel="icon" type="image/png" href="logo.png"/>
+  <link rel="apple-touch-icon" href="logo.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09090b;
+      --bg-elevated: #111113;
+      --surface: rgba(255,255,255,0.04);
+      --surface-hover: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.06);
+      --border-focus: rgba(255,255,255,0.15);
+      --text: #fafafa;
+      --text-secondary: rgba(250,250,250,0.55);
+      --text-tertiary: rgba(250,250,250,0.25);
+      --accent: #10b981;
+      --accent-soft: rgba(16,185,129,0.12);
+      --accent-glow: rgba(16,185,129,0.3);
+      --accent-2: #06b6d4;
+      --accent-2-soft: rgba(6,182,212,0.1);
+      --warn: #f59e0b;
+      --warn-soft: rgba(245,158,11,0.12);
+      --error: #ef4444;
+      --error-soft: rgba(239,68,68,0.1);
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-xs: 6px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Ambient background ── */
+    .ambient {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    }
+    .ambient::before {
+      content: '';
+      position: absolute;
+      width: 800px; height: 800px;
+      top: -300px; right: -200px;
+      background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%);
+      animation: ambient-drift 25s ease-in-out infinite;
+    }
+    .ambient::after {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      bottom: -200px; left: -150px;
+      background: radial-gradient(circle, rgba(6,182,212,0.06) 0%, transparent 70%);
+      animation: ambient-drift-2 30s ease-in-out infinite;
+    }
+    @keyframes ambient-drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-80px, 60px) scale(1.15); }
+    }
+    @keyframes ambient-drift-2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(60px, -50px) scale(1.1); }
+    }
+
+    /* ── Grain texture ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* ── Page container ── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px 120px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 80px;
+      animation: fade-down 0.6s ease both;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+    .header-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      letter-spacing: 1px;
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      margin-bottom: 56px;
+      animation: fade-up 0.7s 0.1s ease both;
+    }
+    .hero-logo {
+      width: 80px; height: 80px;
+      border-radius: 20px;
+      object-fit: cover;
+      margin: 0 auto 28px;
+      display: block;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 60px rgba(16,185,129,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hero-logo:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 80px rgba(16,185,129,0.18);
+    }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero .tagline {
+      font-size: 16px;
+      color: var(--text-secondary);
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    /* ── Command input ── */
+    .input-section {
+      max-width: 600px;
+      margin: 0 auto 48px;
+      animation: fade-up 0.7s 0.2s ease both;
+    }
+    .input-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 5px 5px 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .input-wrapper:focus-within {
+      border-color: rgba(16,185,129,0.4);
+      box-shadow: 0 0 0 4px var(--accent-soft), 0 16px 48px rgba(16,185,129,0.06);
+    }
+    .input-field {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text);
+      padding: 14px 0;
+      caret-color: var(--accent);
+    }
+    .input-field::placeholder {
+      color: var(--text-tertiary);
+    }
+    .send-btn {
+      padding: 12px 24px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: calc(var(--radius) - 3px);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      transition: transform 0.15s, box-shadow 0.25s, background 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .send-btn:hover {
+      box-shadow: 0 0 24px var(--accent-glow);
+      transform: scale(1.02);
+    }
+    .send-btn:active { transform: scale(0.97); }
+    .send-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Quick chips ── */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      justify-content: center;
+    }
+    .chip {
+      padding: 7px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    /* ── Output area ── */
+    .output-section {
+      animation: fade-up 0.7s 0.3s ease both;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 56px 24px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+    .empty-state p {
+      font-size: 14px;
+      color: var(--text-tertiary);
+      line-height: 1.7;
+    }
+
+    /* ── Result cards ── */
+    .results {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      animation: slide-up 0.4s ease both;
+    }
+    .card:hover {
+      border-color: var(--border-focus);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+    .card-body { padding: 20px; }
+
+    /* ── Badges ── */
+    .badge {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.8px;
+      padding: 4px 10px;
+      border-radius: var(--radius-xs);
+    }
+    .badge-success {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(16,185,129,0.2);
+    }
+    .badge-info {
+      background: var(--accent-2-soft);
+      color: var(--accent-2);
+      border: 1px solid rgba(6,182,212,0.15);
+    }
+    .badge-warn {
+      background: var(--warn-soft);
+      color: var(--warn);
+      border: 1px solid rgba(245,158,11,0.2);
+    }
+    .badge-muted {
+      background: var(--surface);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    /* ── JSON display ── */
+    .json-block {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 2;
+      white-space: pre;
+      color: var(--text-secondary);
+    }
+    .jk { color: #7eb8f7; }
+    .js { color: #ffa057; }
+    .jn { color: var(--accent); }
+    .jnull { color: var(--text-tertiary); }
+
+    /* ── Confidence bar ── */
+    .confidence-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .confidence-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      width: 50px;
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+    .confidence-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .confidence-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      width: 0%;
+      transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .confidence-value {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      width: 40px;
+      text-align: right;
+    }
+
+    .meta-line {
+      margin-top: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+    .meta-line .hl-green { color: var(--accent); }
+    .meta-line .hl-blue { color: var(--accent-2); }
+
+    /* ── Response lines ── */
+    .response-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .response-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 12px 14px;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      animation: slide-up 0.35s ease both;
+    }
+    .response-item:nth-child(1) { animation-delay: 0.05s; }
+    .response-item:nth-child(2) { animation-delay: 0.15s; }
+    .response-item:nth-child(3) { animation-delay: 0.25s; }
+    .response-icon { flex-shrink: 0; font-size: 14px; margin-top: 2px; }
+    .response-text { color: var(--text-secondary); }
+    .response-text em {
+      color: var(--accent);
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    /* ── Loader ── */
+    .loader-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 24px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .loader-dots {
+      display: flex;
+      gap: 5px;
+    }
+    .loader-dots span {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: dot-bounce 1s infinite ease-in-out;
+    }
+    .loader-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .loader-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    /* ── Error ── */
+    .error-card {
+      background: var(--error-soft);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      font-size: 14px;
+      color: #fca5a5;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .error-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── History ── */
+    .history-section {
+      margin-top: 56px;
+      animation: fade-up 0.5s 0.35s ease both;
+    }
+    .history-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .history-item:hover {
+      border-color: var(--border-focus);
+      background: var(--surface-hover);
+    }
+    .history-cmd {
+      font-size: 13px;
+      color: var(--text);
+    }
+    .history-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .history-conf {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+    .history-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 3px 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 4px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      margin-top: 80px;
+      padding: 24px 0;
+      border-top: 1px solid var(--border);
+      animation: fade-up 0.5s 0.4s ease both;
+    }
+    .footer p {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .footer a:hover { text-decoration: underline; }
+
+    /* ── Animations ── */
+    @keyframes fade-down {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    @keyframes dot-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .page { padding: 0 16px 80px; }
+      header { margin-bottom: 48px; }
+      .hero { margin-bottom: 40px; }
+      .hero h1 { font-size: 32px; }
+      .hero-logo { width: 64px; height: 64px; border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="ambient"></div>
+
+<div class="page">
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <img src="logo.png" alt="OpenGuy" class="header-logo"/>
+      <span class="header-name">OpenGuy</span>
+    </div>
+    <div class="header-status">
+      <span class="status-dot"></span>
+      READY
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <img src="logo.png" alt="OpenGuy" class="hero-logo"/>
+    <h1><span class="gradient">OpenGuy</span></h1>
+    <p class="tagline">Natural language → real-world control</p>
+  </section>
+
+  <!-- Input -->
+  <section class="input-section">
+    <div class="input-wrapper">
+      <input
+        class="input-field"
+        id="commandInput"
+        type="text"
+        placeholder="Tell your robot what to do..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="send-btn" id="sendBtn" onclick="handleSend()">Send</button>
+    </div>
+    <div class="chips">
+      <div class="chip" onclick="fill('move forward slowly')">move forward slowly</div>
+      <div class="chip" onclick="fill('turn right 45 degrees')">turn right 45°</div>
+      <div class="chip" onclick="fill('pick up the object')">pick up the object</div>
+      <div class="chip" onclick="fill('rotate left')">rotate left</div>
+      <div class="chip" onclick="fill('stop immediately')">stop</div>
+    </div>
+  </section>
+
+  <!-- Output -->
+  <section class="output-section">
+    <div id="outputArea">
+      <div class="empty-state">
+        <div class="empty-icon">🤖</div>
+        <p>Type a command above to get started.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section class="history-section" id="historySection" style="display:none">
+    <div class="history-title">Recent Commands</div>
+    <div class="history-list" id="historyList"></div>
+  </section>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Built with purpose · <a href="https://github.com/OPENEHIRA/OpenGuy" target="_blank">OpenGuy</a></p>
+  </div>
+
+</div>
+
+<script>
+/* ── Parser Logic (client-side, no external API) ── */
+
+const ACTIONS = {
+  move:    ['move', 'go', 'walk', 'drive', 'advance', 'travel', 'slide', 'push'],
+  rotate:  ['rotate', 'turn', 'spin', 'pivot', 'twist', 'swing'],
+  grab:    ['grab', 'grip', 'pick', 'hold', 'grasp', 'catch', 'seize', 'take', 'lift'],
+  release: ['release', 'drop', 'let go', 'put down', 'place', 'set down', 'free', 'open gripper'],
+  stop:    ['stop', 'halt', 'freeze', 'pause', 'abort', 'cancel', 'emergency', 'brake']
+};
+
+const DIRECTIONS = {
+  forward:  ['forward', 'ahead', 'front', 'straight'],
+  backward: ['backward', 'back', 'reverse', 'behind', 'retreat'],
+  left:     ['left'],
+  right:    ['right'],
+  up:       ['up', 'above', 'raise', 'higher', 'lift'],
+  down:     ['down', 'below', 'lower', 'descend']
+};
+
+const MAGNITUDES = {
+  'a bit': 5, 'a little': 3, 'slightly': 3, 'gently': 4,
+  'slowly': 5, 'a lot': 25, 'far': 30, 'much': 20,
+  'fully': 50, 'completely': 50, 'halfway': 25, 'way': 30
+};
+
+const ANGLE_MAGNITUDES = {
+  'a bit': 20, 'a little': 15, 'slightly': 15, 'gently': 10,
+  'way': 90, 'fully': 180, 'completely': 180, 'halfway': 90
+};
+
+function parseCommand(text) {
+  const lower = text.toLowerCase().trim();
+
+  let action = 'unknown', confidence = 0;
+  for (const [act, keywords] of Object.entries(ACTIONS)) {
+    for (const kw of keywords) {
+      if (lower.includes(kw)) {
+        action = act;
+        confidence = 0.85;
+        break;
+      }
+    }
+    if (action !== 'unknown') break;
+  }
+
+  let direction = null;
+  for (const [dir, keywords] of Object.entries(DIRECTIONS)) {
+    for (const kw of keywords) {
+      if (lower.includes(kw)) {
+        direction = dir;
+        confidence = Math.min(confidence + 0.05, 0.98);
+        break;
+      }
+    }
+    if (direction) break;
+  }
+
+  /* extract number */
+  const numMatch = lower.match(/(\d+\.?\d*)\s*(cm|deg|degree|°|percent|%)?/);
+  let distance_cm = null, angle_deg = null;
+
+  if (numMatch) {
+    const val = parseFloat(numMatch[1]);
+    const unit = numMatch[2] || '';
+    if (['deg', 'degree', '°'].includes(unit) || action === 'rotate') {
+      angle_deg = val;
+    } else {
+      distance_cm = val;
+    }
+    confidence = Math.min(confidence + 0.05, 0.98);
+  }
+
+  /* fuzzy magnitudes */
+  if (!distance_cm && !angle_deg) {
+    for (const [word, val] of Object.entries(MAGNITUDES)) {
+      if (lower.includes(word)) {
+        if (action === 'rotate') {
+          angle_deg = ANGLE_MAGNITUDES[word] || val;
+        } else {
+          distance_cm = val;
+        }
+        break;
+      }
+    }
+  }
+
+  /* defaults */
+  if (action === 'move' && !direction) direction = 'forward';
+  if (action === 'move' && !distance_cm) distance_cm = 10;
+  if (action === 'rotate' && !direction) direction = 'right';
+  if (action === 'rotate' && !angle_deg) angle_deg = 45;
+  if (action === 'unknown') confidence = 0.1;
+
+  return {
+    action,
+    direction,
+    distance_cm,
+    angle_deg,
+    confidence: parseFloat(confidence.toFixed(2)),
+    raw: text
+  };
+}
+
+/* ── State ── */
+let history = [];
+
+/* ── Helpers ── */
+function fill(t) {
+  const el = document.getElementById('commandInput');
+  el.value = t;
+  el.focus();
+}
+
+function colorJson(obj) {
+  return JSON.stringify(obj, null, 2)
+    .replace(/(\"[\w_]+\")\s*:/g, '<span class="jk">$1</span>:')
+    .replace(/:\s*(\".*?\")/g, ': <span class="js">$1</span>')
+    .replace(/:\s*(\d+\.?\d*)/g, ': <span class="jn">$1</span>')
+    .replace(/:\s*(null)/g, ': <span class="jnull">null</span>');
+}
+
+function simLines(cmd) {
+  const { action, direction, distance_cm, angle_deg } = cmd;
+  const lines = [];
+  if (action === 'move') {
+    const dist = distance_cm ? `${distance_cm} cm` : '10 cm';
+    const dir = direction || 'forward';
+    lines.push({ i: '◎', t: `Trajectory computed — <em>${dir}</em>, <em>${dist}</em>` });
+    lines.push({ i: '⚙', t: `Motor controllers engaged` });
+    lines.push({ i: '✓', t: `Moved <em>${dir}</em> <em>${dist}</em> successfully` });
+  } else if (action === 'rotate') {
+    const deg = angle_deg ? `${angle_deg}°` : '45°';
+    const dir = direction || 'right';
+    lines.push({ i: '◎', t: `Rotation calculated — <em>${dir}</em>, <em>${deg}</em>` });
+    lines.push({ i: '⚙', t: `Servo active` });
+    lines.push({ i: '✓', t: `Rotated <em>${dir}</em> <em>${deg}</em>` });
+  } else if (action === 'grab') {
+    lines.push({ i: '◎', t: `Grip sequence initiated` });
+    lines.push({ i: '⚙', t: `Gripper force applied — 40%` });
+    lines.push({ i: '✓', t: `Object secured` });
+  } else if (action === 'release') {
+    lines.push({ i: '◎', t: `Release sequence started` });
+    lines.push({ i: '✓', t: `Gripper opened, object released` });
+  } else if (action === 'stop') {
+    lines.push({ i: '■', t: `Emergency stop — all motors halted` });
+    lines.push({ i: '✓', t: `System idle` });
+  } else {
+    lines.push({ i: '✕', t: `Command not recognized` });
+  }
+  return lines;
+}
+
+function getBadge(confidence) {
+  if (confidence >= 0.8) return '<span class="badge badge-success">HIGH</span>';
+  if (confidence >= 0.5) return '<span class="badge badge-info">MEDIUM</span>';
+  return '<span class="badge badge-warn">LOW</span>';
+}
+
+/* ── Render ── */
+function renderResult(cmd) {
+  const conf = cmd.confidence ?? 0;
+  const pct = Math.round(conf * 100);
+  const lines = simLines(cmd);
+
+  return `<div class="results">
+    <div class="card" style="animation-delay:0s">
+      <div class="card-header">
+        <span class="card-label">Parsed Command</span>
+        ${getBadge(conf)}
+      </div>
+      <div class="card-body">
+        <div class="json-block">${colorJson(cmd)}</div>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay:0.08s">
+      <div class="card-header">
+        <span class="card-label">Confidence</span>
+        <span class="badge badge-muted">LOCAL PARSE</span>
+      </div>
+      <div class="card-body">
+        <div class="confidence-row">
+          <span class="confidence-label">Score</span>
+          <div class="confidence-track"><div class="confidence-fill" id="confFill"></div></div>
+          <span class="confidence-value">${pct}%</span>
+        </div>
+        <div class="meta-line">
+          Action: <span class="hl-green">${cmd.action}</span> &nbsp;·&nbsp;
+          Direction: <span class="hl-blue">${cmd.direction ?? 'n/a'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay:0.15s">
+      <div class="card-header">
+        <span class="card-label">Response</span>
+        <span class="badge badge-info">SIMULATED</span>
+      </div>
+      <div class="card-body">
+        <div class="response-list">
+          ${lines.map(l => `<div class="response-item"><span class="response-icon">${l.i}</span><span class="response-text">${l.t}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderLoading() {
+  return `<div class="card"><div class="loader-card">
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+    Parsing command...
+  </div></div>`;
+}
+
+function renderError(msg) {
+  return `<div class="error-card"><span class="error-icon">⚠</span><span>${msg}</span></div>`;
+}
+
+/* ── Send ── */
+async function handleSend() {
+  const input = document.getElementById('commandInput');
+  const btn = document.getElementById('sendBtn');
+  const area = document.getElementById('outputArea');
+  const text = input.value.trim();
+  if (!text) { input.focus(); return; }
+
+  btn.disabled = true;
+  area.innerHTML = renderLoading();
+
+  /* Simulate a short processing delay for polish */
+  await new Promise(r => setTimeout(r, 400 + Math.random() * 300));
+
+  try {
+    const cmd = parseCommand(text);
+    area.innerHTML = renderResult(cmd);
+
+    requestAnimationFrame(() => setTimeout(() => {
+      const f = document.getElementById('confFill');
+      if (f) f.style.width = `${Math.round((cmd.confidence ?? 0) * 100)}%`;
+    }, 60));
+
+    if (cmd.action && cmd.action !== 'unknown') {
+      history.unshift({ text, action: cmd.action, conf: Math.round((cmd.confidence ?? 0) * 100) });
+      if (history.length > 8) history.pop();
+      renderHistory();
+    }
+  } catch (err) {
+    area.innerHTML = renderError(err.message);
+  }
+
+  btn.disabled = false;
+  input.select();
+}
+
+function renderHistory() {
+  const sec = document.getElementById('historySection');
+  const list = document.getElementById('historyList');
+  if (!history.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  list.innerHTML = history.map(h => `
+    <div class="history-item" onclick="fill('${h.text.replace(/'/g, "\\'")}')">
+      <span class="history-cmd">${h.text}</span>
+      <div class="history-meta">
+        <span class="history-conf">${h.conf}%</span>
+        <span class="history-tag">${h.action.toUpperCase()}</span>
+      </div>
+    </div>`).join('');
+}
+
+/* ── Keyboard shortcut ── */
+document.getElementById('commandInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSend();
+});
+</script>
+</body>
+</html>
