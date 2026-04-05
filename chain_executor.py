@@ -30,16 +30,10 @@ class CommandChain:
         self.current_step = 0
         self.results = []
         
-        # Split by common delimiters
-        separators = [' and ', ' then ', ' & ', ',']
-        text_lower = text.lower()
-        
-        # Replace all separators with a standard delimiter
-        for sep in separators:
-            text_lower = text_lower.replace(sep, ' ||| ')
-        
-        # Split and clean
-        command_texts = [cmd.strip() for cmd in text_lower.split('|||') if cmd.strip()]
+# Split by common delimiters while preserving original case
+        separators = [r'\s+and\s+', r'\s+then\s+', r'\s*&\s*', r',']
+        pattern = '|'.join(separators)
+        command_texts = [cmd.strip() for cmd in re.split(pattern, text, flags=re.IGNORECASE) if cmd.strip()]
         
         if not command_texts:
             return []

@@ -1,0 +1,15 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Environment / config
+.env
+.env.*
+
+# Local history
+command_history.json
+
+# OS files
+.DS_Store

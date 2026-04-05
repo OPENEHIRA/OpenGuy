@@ -16,9 +16,16 @@ from typing import Optional, Dict, Any
 
 def _regex_parse(text: str) -> Dict[str, Any]:
     """Original regex parser. Used when AI is unavailable."""
-    text = text.lower().strip()
+    original_text = text.strip()
+    text = original_text.lower()
 
-    result = {"action": None, "direction": None, "distance_cm": None, "angle_deg": None, "raw": text}
+    result = {
+        "action": None,
+        "direction": None,
+        "distance_cm": None,
+        "angle_deg": None,
+        "raw": original_text,
+    }
 
     if re.search(r'\b(move|go|walk|travel|advance)\b', text):
         result["action"] = "move"
@@ -32,10 +39,20 @@ def _regex_parse(text: str) -> Dict[str, Any]:
         result["action"] = "stop"
         return result
 
-    for direction in ["forward", "backward", "back", "left", "right", "up", "down"]:
+    for direction in ["forward", "backward", "back", "left", "right", "up", "down", "clockwise", "counterclockwise", "cw", "ccw"]:
         if direction in text:
-            result["direction"] = "backward" if direction == "back" else direction
+            if direction == "back":
+                result["direction"] = "backward"
+            elif direction in {"clockwise", "cw"}:
+                result["direction"] = "right"
+            elif direction in {"counterclockwise", "ccw"}:
+                result["direction"] = "left"
+            else:
+                result["direction"] = direction
             break
+
+    if result["action"] not in {"move", "rotate"}:
+        result["direction"] = None
 
     dist_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:cm|centimeter)', text)
     if dist_match:
@@ -54,6 +71,12 @@ def _regex_parse(text: str) -> Dict[str, Any]:
         bare_angle_match = re.search(r'\b(\d+(?:\.\d+)?)\b', text)
         if bare_angle_match:
             result["angle_deg"] = float(bare_angle_match.group(1))
+
+    if result["action"] == "move" and result["direction"] is None:
+        result["direction"] = "forward"
+
+    if result["action"] == "rotate" and result["direction"] is None and result["angle_deg"] is not None:
+        result["direction"] = "right"
 
     if result["action"] == "move" and result["distance_cm"] is None and result["direction"]:
         if re.search(r'\b(a bit|slightly|a little|little)\b', text):

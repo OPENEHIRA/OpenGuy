@@ -4,7 +4,7 @@
 
 OpenGuy converts natural language commands into structured robot actions — no robotics experience required. Type what you want the arm to do, and OpenGuy handles the rest.
 
-> **Status:** Production Ready — Flask backend · AI parser · Web UI · Multi-step chains · 2D visualization
+> **Status:** Production Ready — Flask backend · AI parser · Web UI · Multi-step chains · 2D visualization · voice input
 
 ---
 
@@ -14,6 +14,7 @@ OpenGuy converts natural language commands into structured robot actions — no 
 - **Flask Backend**: Full REST API for robot control
 - **Multi-Step Command Chains**: "pick up AND move forward AND release"
 - **2D Workspace Visualization**: Real-time robot position tracking
+- **Voice Input**: Browser-native voice commands via Web Speech API
 - **Type-Safe Code**: Full type hints across all modules
 - **Better Error Handling**: Comprehensive input validation
 
@@ -175,7 +176,6 @@ OpenGuy/
 
 ### 🚧 In Progress / Planned
 - [ ] PyBullet 3D physics simulation
-- [ ] Voice input (Web Audio API)
 - [ ] Real hardware integration (USB/Serial)
 - [ ] Telegram bot interface
 - [ ] WhatsApp bot integration
