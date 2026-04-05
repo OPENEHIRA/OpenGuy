@@ -544,6 +544,9 @@ let hist = (() => {
   catch { return []; }
 })();
 
+// Declared here to avoid "cannot access before initialization" error
+const REPLAY_ICON = `<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>`;
+
 if (apiKey) document.getElementById('apiField').value = apiKey;
 renderHist();
 renderSuggestions('default');
@@ -817,9 +820,6 @@ async function executeChainSequence() {
 }
 
 // ── History ───────────────────────────────────────────────────────────────
-
-// Declared here (above renderHist) to avoid "cannot access before initialization" error
-const REPLAY_ICON = `<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>`;
 
 function addToHist(entry) {
   hist = hist.filter(h => h.text !== entry.text);
