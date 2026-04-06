@@ -1,3 +1,4 @@
 Flask==3.0.0
 Werkzeug==3.0.1
 pytest>=8.0
+pybullet>=3.2.5
