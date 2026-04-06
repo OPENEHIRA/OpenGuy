@@ -12,6 +12,8 @@ from pathlib import Path
 from flask import Flask, render_template_string, request, jsonify
 from parser import parse
 from simulator import RobotSimulator
+from hybrid_sim import HybridExecutor
+from telegram_webhook import setup_telegram_webhook
 from chain_executor import parse_command_chain, execute_chain_step, get_chain_status, reset_chain
 from visualizer import get_workspace_visualization
 from speech import get_transcription_service_status
@@ -21,8 +23,8 @@ from speech import get_transcription_service_status
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 
-# Global robot simulator (one instance per session)
-robot = RobotSimulator()
+# Global robot executor (hybrid: hardware with simulator fallback)
+robot = HybridExecutor(try_hardware=True)
 
 # Command history file
 HISTORY_FILE = Path("command_history.json")
@@ -283,5 +285,16 @@ if __name__ == "__main__":
     print("\n✓ Starting Flask server...")
     print("✓ Open http://localhost:5000 in your browser")
     print("✓ API docs: http://localhost:5000/api/health\n")
+
+    # Setup Telegram bot webhook if token is provided
+    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if telegram_token:
+        try:
+            setup_telegram_webhook(app, robot)
+            print("✓ Telegram bot enabled")
+        except Exception as e:
+            print(f"⚠ Telegram bot setup failed: {e}")
+    else:
+        print("ℹ Set TELEGRAM_BOT_TOKEN env var to enable Telegram bot")
 
     app.run(debug=True, host="0.0.0.0", port=5000)

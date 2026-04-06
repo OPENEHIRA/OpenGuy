@@ -15,6 +15,8 @@ OpenGuy converts natural language commands into structured robot actions — no 
 - **Multi-Step Command Chains**: "pick up AND move forward AND release"
 - **2D Workspace Visualization**: Real-time robot position tracking
 - **Voice Input**: Browser-native voice commands via Web Speech API
+- **Real Hardware Integration**: USB/Serial with auto-detection
+- **Telegram Bot**: Chat interface for robot control
 - **Type-Safe Code**: Full type hints across all modules
 - **Better Error Handling**: Comprehensive input validation
 
@@ -136,7 +138,48 @@ For detailed hardware setup, see [HARDWARE.md](HARDWARE.md)
 
 ---
 
-### Web UI (Recommended)
+## Telegram Bot Interface
+
+Control your robot from Telegram chat. Send natural language commands from anywhere to move your robot arm, check status, and execute complex multi-step sequences.
+
+### Quick Start
+```bash
+# Set your Telegram bot token
+export TELEGRAM_BOT_TOKEN="your-bot-token-from-BotFather"
+
+# Start Flask server with webhook
+python app.py
+
+# Chat with your bot on Telegram!
+```
+
+### Features
+- 💬 Natural language commands in chat
+- 🤖 Auto-detection of hardware vs simulator
+- 📊 Real-time robot status updates
+- 🔗 Multi-step command chains
+- 🎯 Confidence scoring for command clarity
+
+### Example Commands
+```
+User: move forward 10 cm
+Bot: 🚀 Moved forward 10.0cm
+    📍 New position: (10.0, 0.0)
+
+User: rotate right AND grab
+Bot: Step 1/2 ✓ Rotated right 45°
+    Step 2/2 ✓ Gripper CLOSED
+
+User: /status
+Bot: 🤖 Robot Status
+    Mode: 🟢 HARDWARE
+    Position: (10.0, 0.0)
+    Gripper: Closed
+```
+
+For detailed Telegram setup and commands, see [TELEGRAM.md](TELEGRAM.md)
+
+---
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -204,7 +247,7 @@ OpenGuy/
 ### 🚧 In Progress / Planned
 - [x] PyBullet 3D physics simulation
 - [x] Real hardware integration (USB/Serial)
-- [ ] Telegram bot interface
+- [x] Telegram bot interface
 - [ ] WhatsApp bot integration
 - [ ] Mobile app (React Native)
 - [ ] Cloud deployment
