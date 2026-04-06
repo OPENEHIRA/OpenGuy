@@ -15,9 +15,6 @@ OpenGuy converts natural language commands into structured robot actions — no 
 - **Multi-Step Command Chains**: "pick up AND move forward AND release"
 - **2D Workspace Visualization**: Real-time robot position tracking
 - **Voice Input**: Browser-native voice commands via Web Speech API
-- **Real Hardware Integration**: USB/Serial with auto-detection
-- **Telegram Bot**: Chat interface for robot control
-- **WhatsApp Bot**: Twilio-powered WhatsApp integration for robot control
 - **Type-Safe Code**: Full type hints across all modules
 - **Better Error Handling**: Comprehensive input validation
 
@@ -60,8 +57,6 @@ Output  →  Step 1/3 ✓ Step 2/3 ✓ Step 3/3 ✓
 - ✅ Context-aware smart suggestions
 - ✅ Persistent command history with replay
 - ✅ Offline operation (regex parser works without API)
-- ✅ **Real hardware integration** (USB/Serial with auto-detection)
-- ✅ **Hybrid simulator/hardware mode** (seamless switching)
 
 ### API Endpoints
 - `GET /` — Web UI
@@ -112,122 +107,9 @@ Production-ready REST API with:
 
 ---
 
-## Hardware Integration
+## Installation & Usage
 
-OpenGuy automatically detects and uses connected robot hardware. When no hardware is available, it falls back to simulation seamlessly.
-
-### Supported Hardware
-- **Arduino-based Robot Arms** (DIY 5-DOF, auto-detected)
-- **Simulator Fallback** (PyBullet 3D + 2D modes)
-
-### Quick Start with Hardware
-
-```python
-from hybrid_sim import HybridExecutor
-
-# Auto-detects hardware on startup
-executor = HybridExecutor(try_hardware=True)
-
-# Commands automatically use hardware if available
-executor.execute('move', 'forward', 10)
-
-# Check mode
-print(executor.get_status()['mode'])  # "hardware" or "simulator"
-```
-
-For detailed hardware setup, see [HARDWARE.md](HARDWARE.md)
-
----
-
-## Telegram Bot Interface
-
-Control your robot from Telegram chat. Send natural language commands from anywhere to move your robot arm, check status, and execute complex multi-step sequences.
-
-### Quick Start
-```bash
-# Set your Telegram bot token
-export TELEGRAM_BOT_TOKEN="your-bot-token-from-BotFather"
-
-# Start Flask server with webhook
-python app.py
-
-# Chat with your bot on Telegram!
-```
-
-### Features
-- 💬 Natural language commands in chat
-- 🤖 Auto-detection of hardware vs simulator
-- 📊 Real-time robot status updates
-- 🔗 Multi-step command chains
-- 🎯 Confidence scoring for command clarity
-
-### Example Commands
-```
-User: move forward 10 cm
-Bot: 🚀 Moved forward 10.0cm
-    📍 New position: (10.0, 0.0)
-
-User: rotate right AND grab
-Bot: Step 1/2 ✓ Rotated right 45°
-    Step 2/2 ✓ Gripper CLOSED
-
-User: /status
-Bot: 🤖 Robot Status
-    Mode: 🟢 HARDWARE
-    Position: (10.0, 0.0)
-    Gripper: Closed
-```
-
-For detailed Telegram setup and commands, see [TELEGRAM.md](TELEGRAM.md)
-
----
-
-## WhatsApp Bot Interface
-
-Control your robot directly from WhatsApp using Twilio integration. Reach your robot from the most popular messaging app with natural language commands.
-
-### Quick Start
-```bash
-# Set your Twilio credentials
-export TWILIO_ACCOUNT_SID="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-export TWILIO_AUTH_TOKEN="your_auth_token_here"
-export TWILIO_WHATSAPP_NUMBER="whatsapp:+1415xxx1234"
-
-# Start Flask server with webhook
-python app.py
-
-# Chat with your bot on WhatsApp!
-```
-
-### Features
-- 💬 WhatsApp chat interface via Twilio
-- 🤖 Hardware auto-detection
-- 📊 Real-time status and feedback
-- 🔗 Multi-step command chains
-- 👥 Multi-user session support
-
-### Example Session
-```
-User: hello
-Bot: 🤖 Welcome to OpenGuy!
-     I can control robot arms using natural language.
-
-User: move forward, rotate right, grab
-Bot: 🟢 Confidence: 88%
-     Step 1/3 ✓ Moved forward 10cm
-     Step 2/3 ✓ Rotated right 45°
-     Step 3/3 ✓ Gripper CLOSED
-
-User: /status
-Bot: 🤖 Robot Status
-     Mode: 🟡 SIMULATOR
-     Position: (10.0, 0.0)
-     Gripper: Closed
-```
-
-For detailed WhatsApp setup and commands, see [WHATSAPP.md](WHATSAPP.md)
-
----
+### Web UI (Recommended)
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -293,13 +175,12 @@ OpenGuy/
 - [x] Type hints and validation
 
 ### 🚧 In Progress / Planned
-- [x] PyBullet 3D physics simulation
-- [x] Real hardware integration (USB/Serial)
-- [x] Telegram bot interface
-- [x] WhatsApp bot integration
-- [x] **Robot learning & autonomous adaptation**
-- [x] **Mobile app (React Native)** ✨ NEW
-- [x] **Cloud deployment (Heroku/AWS)** ✨ NEW
+- [ ] PyBullet 3D physics simulation
+- [ ] Real hardware integration (USB/Serial)
+- [ ] Telegram bot interface
+- [ ] WhatsApp bot integration
+- [ ] Mobile app (React Native)
+- [ ] Cloud deployment
 - [ ] Advanced analytics dashboard
 
 ---
@@ -396,114 +277,6 @@ Response:
 
 ---
 
-## 📱 Mobile App (React Native)
-
-Control your robot from anywhere with the OpenGuy mobile app.
-
-### Features
-- 🎤 Voice control for natural language commands
-- 📊 Real-time robot status and position tracking
-- 🧠 View robot's learned strategies and success rates
-- 📜 Command history with replay
-- 🔄 Switch between WhatsApp, Telegram, or direct API
-- 💫 Beautiful native interface for iOS and Android
-
-### Quick Start
-```bash
-cd mobile
-npm install                    # Install dependencies
-npm run ios                   # Run on iOS simulator
-# or
-npm run android              # Run on Android emulator
-```
-
-### Build for Production
-```bash
-# iOS (macOS required)
-npm run build:ios
-# or
-# Android
-npm run build:android
-```
-
-For detailed setup, see [MOBILE_SETUP.md](MOBILE_SETUP.md)
-
----
-
-## 🚀 Cloud Deployment
-
-Deploy OpenGuy to production with Heroku or AWS.
-
-### Quick Deploy to Heroku (⚡ Fastest)
-```bash
-heroku create openguy-robot
-heroku config:set ROBOT_MODE=simulator
-git push heroku main
-heroku open
-```
-
-Your app is live! Visit: `https://openguy-robot.herokuapp.com`
-
-### AWS Deployment
-```bash
-# Option 1: Elastic Beanstalk (easiest)
-eb create openguy-env
-eb open
-
-# Option 2: ECS with Docker (most scalable)
-aws ecr create-repository --repository-name openguy
-docker build -t openguy .
-docker tag openguy:latest YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/openguy:latest
-docker push YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/openguy:latest
-```
-
-### Features
-- ✅ Auto-scaling based on demand
-- ✅ SSL/HTTPS included
-- ✅ Health checks and monitoring
-- ✅ Docker containerization
-- ✅ CI/CD ready
-- ✅ Persistent storage for learning data
-
-For detailed deployment guides, see [DEPLOYMENT.md](DEPLOYMENT.md)
-
----
-
-## 🧠 Robot Learning System
-
-OpenGuy includes an intelligent learning system that enables robots to improve over time.
-
-### How It Works
-```
-Command 1: "move forward 50cm" → SUCCESS ✓
-Command 2: "move forward 50cm" → SUCCESS ✓
-Command 3: "move forward 50cm" → COLLISION ✗
-
-Robot learns: "50cm is risky, use smaller steps"
-
-Command 4: "move forward 50cm" → AUTO-ADJUSTED to 2x25cm steps → SUCCESS ✓
-```
-
-### Features
-- 📊 Tracks success/failure patterns
-- 🔄 Auto-adjusts movement parameters
-- 💾 Persists learned models to disk
-- 📈 Generates learning reports
-- 🎯 Predicts optimal execution strategies
-
-### Access Learning Data
-```bash
-# Via Mobile App
-User: /learn
-Bot: 📚 Robot Learning Report
-     Success Rate: 85%
-     Learned Strategies: 7
-```
-
-For details, see [ROBOT_LEARNING.md](ROBOT_LEARNING.md)
-
----
-
 ## Contributing
 
 OpenGuy is beginner-friendly. Pick any roadmap item and submit a PR!
@@ -513,8 +286,8 @@ OpenGuy is beginner-friendly. Pick any roadmap item and submit a PR!
 - Improve the AI system prompt
 - Create tests in `tests/`
 - Add hardware drivers
-- Enhance the mobile app
-- Improve cloud deployment
+- Build the mobile app
+- Deploy to cloud
 
 **How to contribute:**
 1. Fork the repo
