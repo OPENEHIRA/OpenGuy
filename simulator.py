@@ -338,9 +338,10 @@ class RobotSimulator:
             "gripper_open": self.gripper_open,
             "commands_executed": self.command_count,
             "workspace": {
-                "x_bounds": [self.MIN_X, self.MAX_X],
-                "y_bounds": [self.MIN_Y, self.MAX_Y],
-            }
+                "x_bounds": [self.MIN_X * 100, self.MAX_X * 100],
+                "y_bounds": [self.MIN_Y * 100, self.MAX_Y * 100],
+            },
+            "simulation_mode": "3d" if self.use_3d else "2d"
         }
 
     def __del__(self):
