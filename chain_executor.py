@@ -6,6 +6,7 @@ Parses "do X AND do Y AND do Z" and executes sequentially.
 import re
 from typing import List, Dict, Any, Optional
 from parser import parse
+from simulator import RobotSimulator
 
 
 class CommandChain:
@@ -15,6 +16,7 @@ class CommandChain:
         self.current_step = 0
         self.commands: List[Dict[str, Any]] = []
         self.results: List[Dict[str, Any]] = []
+        self.simulator = RobotSimulator(use_3d=True)  # Use 3D physics simulation
     
     def parse_chain(self, text: str, api_key: Optional[str] = None) -> List[Dict[str, Any]]:
         """
