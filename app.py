@@ -284,4 +284,30 @@ if __name__ == "__main__":
     print("✓ Open http://localhost:5000 in your browser")
     print("✓ API docs: http://localhost:5000/api/health\n")
 
+    # Setup Telegram bot webhook if token is provided
+    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if telegram_token:
+        try:
+            setup_telegram_webhook(app, robot)
+            print("✓ Telegram bot enabled")
+        except Exception as e:
+            print(f"⚠ Telegram bot setup failed: {e}")
+    else:
+        print("ℹ Set TELEGRAM_BOT_TOKEN env var to enable Telegram bot")
+    
+    # Setup WhatsApp bot webhook if Twilio credentials provided
+    twilio_creds = [
+        os.getenv("TWILIO_ACCOUNT_SID"),
+        os.getenv("TWILIO_AUTH_TOKEN"),
+        os.getenv("TWILIO_WHATSAPP_NUMBER")
+    ]
+    if all(twilio_creds):
+        try:
+            setup_whatsapp_webhook(app, robot)
+            print("✓ WhatsApp bot enabled")
+        except Exception as e:
+            print(f"⚠ WhatsApp bot setup failed: {e}")
+    else:
+        print("ℹ Set TWILIO_* env vars to enable WhatsApp bot")
+
     app.run(debug=True, host="0.0.0.0", port=5000)
