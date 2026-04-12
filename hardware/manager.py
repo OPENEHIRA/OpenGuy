@@ -38,7 +38,8 @@ class HardwareManager:
 
         if backend_name == "simulator":
             from simulator import RobotSimulator
-            return RobotSimulator()
+            use_3d = self._config.get("use_3d", True)
+            return RobotSimulator(use_3d=use_3d)
 
         elif backend_name == "ros":
             from hardware.backends.ros_backend import ROSBackend
@@ -63,7 +64,8 @@ class HardwareManager:
         else:
             print(f"[Hardware] Unknown backend '{backend_name}' — falling back to simulator")
             from simulator import RobotSimulator
-            return RobotSimulator()
+            use_3d = self._config.get("use_3d", True)
+            return RobotSimulator(use_3d=use_3d)
 
     # ── Public interface (same as old RobotSimulator) ─────────────────────────
 

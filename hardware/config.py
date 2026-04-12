@@ -13,6 +13,7 @@ CONFIG_FILE = Path("hardware.json")
 
 DEFAULTS: Dict[str, Any] = {
     "backend": "simulator",
+    "use_3d": False,
     "ros": {
         "host": "localhost",
         "port": 9090,
