@@ -12,94 +12,156 @@ import urllib.error
 from typing import Optional, Dict, Any
 
 
+# ── Parser Constants ─────────────────────────────────────────────────────────
+
+ACTION_MAPPINGS = {
+    "stop": [r"stop", r"halt", r"freeze", r"pause"],
+    "release": [r"release", r"drop", r"let\s+go", r"open"],
+    "move": [r"move", r"go", r"walk", r"travel", r"advance", r"steps?", r"glide"],
+    "rotate": [r"rotate", r"turn", r"spin", r"pivot", r"swing"],
+    "grab": [r"grab", r"grip", r"pick", r"grasp", r"take", r"hold"]
+}
+
+DIRECTION_MAPPINGS = {
+    "forward": [r"forward", r"ahead", r"front", r"straight"],
+    "backward": [r"backward", r"back", r"rear", r"reverse"],
+    "left": [r"left", r"port", r"counterclockwise", r"ccw"],
+    "right": [r"right", r"starboard", r"clockwise", r"cw"],
+    "up": [r"up", r"upward", r"above", r"higher"],
+    "down": [r"down", r"downward", r"below", r"lower"]
+}
+
+SEMANTIC_MODIFIERS = {
+    "tiny": {"distance": 1.0, "angle": 5.0},
+    "slightly": {"distance": 3.0, "angle": 10.0},
+    "little": {"distance": 3.0, "angle": 10.0},
+    "a bit": {"distance": 5.0, "angle": 15.0},
+    "bit": {"distance": 5.0, "angle": 15.0},
+    "far": {"distance": 30.0, "angle": 90.0},
+    "lot": {"distance": 30.0, "angle": 90.0},
+    "long": {"distance": 50.0, "angle": 180.0}
+}
+
+SPEED_MODIFIERS = {
+    "slowly": 0.2,
+    "gently": 0.2,
+    "carefully": 0.3,
+    "quietly": 0.3,
+    "quickly": 0.8,
+    "fast": 0.9,
+    "rapidly": 1.0
+}
+
+
 # ── Regex fallback (original MVP logic) ─────────────────────────────────────
 
 def _regex_parse(text: str) -> Dict[str, Any]:
-    """Original regex parser. Used when AI is unavailable."""
+    """Improved regex parser with semantic interpretation and synonym handling."""
     original_text = text.strip()
     text = original_text.lower()
 
     result = {
-        "action": None,
+        "action": "unknown",
         "direction": None,
         "distance_cm": None,
         "angle_deg": None,
+        "speed": 0.5,  # Default mid speed
+        "confidence": 0.0,
         "raw": original_text,
     }
 
-    if re.search(r'\b(move|go|walk|travel|advance)\b', text):
-        result["action"] = "move"
-    elif re.search(r'\b(rotate|turn|spin|pivot)\b', text):
-        result["action"] = "rotate"
-    elif re.search(r'\b(grab|grip|pick|grasp|take)\b', text):
-        result["action"] = "grab"
-    elif re.search(r'\b(release|drop|let go|open)\b', text):
-        result["action"] = "release"
-    elif re.search(r'\b(stop|halt|freeze|pause)\b', text):
-        result["action"] = "stop"
+    # 1. Action Intent Detection
+    for action, synonyms in ACTION_MAPPINGS.items():
+        pattern = r'\b(' + '|'.join(synonyms) + r')\b'
+        if re.search(pattern, text):
+            result["action"] = action
+            result["confidence"] = 0.5
+            break
+    
+    if result["action"] == "stop":
+        result["confidence"] = 0.9
         return result
 
-    for direction in ["forward", "backward", "back", "left", "right", "up", "down", "clockwise", "counterclockwise", "cw", "ccw"]:
-        if direction in text:
-            if direction == "back":
-                result["direction"] = "backward"
-            elif direction in {"clockwise", "cw"}:
-                result["direction"] = "right"
-            elif direction in {"counterclockwise", "ccw"}:
-                result["direction"] = "left"
-            else:
-                result["direction"] = direction
+    # 2. Direction Detection
+    for direction, synonyms in DIRECTION_MAPPINGS.items():
+        pattern = r'\b(' + '|'.join(synonyms) + r')\b'
+        if re.search(pattern, text):
+            result["direction"] = direction
             break
 
-    if result["action"] not in {"move", "rotate"}:
-        result["direction"] = None
+    # 3. Numeric Extractions (Priority)
+    # Match values followed by units
+    unit_pattern = r'(\d+(?:\.\d+)?)\s*(cm|centimeter|units?|steps?|degrees?|deg|°)'
+    unit_match = re.search(unit_pattern, text)
+    if unit_match:
+        val = float(unit_match.group(1))
+        unit = unit_match.group(2)
+        if any(u in unit for u in ["cm", "centimeter", "unit"]):
+            result["distance_cm"] = val
+        elif "step" in unit:
+            result["distance_cm"] = val * 5.0  # Normalized: 1 step = 5cm
+        elif any(u in unit for u in ["degree", "deg", "°"]):
+            result["angle_deg"] = val
+        result["confidence"] = 0.9
 
-    dist_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:cm|centimeter)', text)
-    if dist_match:
-        result["distance_cm"] = float(dist_match.group(1))
-
-    angle_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:degree|deg|°)', text)
-    if angle_match:
-        result["angle_deg"] = float(angle_match.group(1))
-
+    # Handle bare numbers if action is known but no units found
     if result["distance_cm"] is None and result["action"] == "move":
-        bare_dist_match = re.search(r'\b(\d+(?:\.\d+)?)\b', text)
-        if bare_dist_match and not angle_match:
-            result["distance_cm"] = float(bare_dist_match.group(1))
+        bare_match = re.search(r'\b(\d+(?:\.\d+)?)\b', text)
+        if bare_match and not unit_match:
+            result["distance_cm"] = float(bare_match.group(1))
+            result["confidence"] = 0.7
 
     if result["angle_deg"] is None and result["action"] == "rotate":
-        bare_angle_match = re.search(r'\b(\d+(?:\.\d+)?)\b', text)
-        if bare_angle_match:
-            result["angle_deg"] = float(bare_angle_match.group(1))
+        bare_match = re.search(r'\b(\d+(?:\.\d+)?)\b', text)
+        if bare_match and not unit_match:
+            result["angle_deg"] = float(bare_match.group(1))
+            result["confidence"] = 0.7
 
+    # 4. Semantic Modifiers (Vague terms) - Only if numeric missing
+    if result["distance_cm"] is None and result["action"] == "move":
+        for modifier, values in SEMANTIC_MODIFIERS.items():
+            if modifier in text:
+                result["distance_cm"] = values["distance"]
+                result["confidence"] = 0.8
+                break
+        else:
+            if result["direction"]: # Default distance
+                result["distance_cm"] = 10.0
+                result["confidence"] = 0.6
+
+    if result["angle_deg"] is None and result["action"] == "rotate":
+        for modifier, values in SEMANTIC_MODIFIERS.items():
+            if modifier in text:
+                result["angle_deg"] = values["angle"]
+                result["confidence"] = 0.8
+                break
+        else:
+            if result["direction"]: # Default angle
+                result["angle_deg"] = 45.0
+                result["confidence"] = 0.6
+
+    # 5. Speed Modifiers
+    for modifier, speed_val in SPEED_MODIFIERS.items():
+        if modifier in text:
+            result["speed"] = speed_val
+            break
+
+    # 6. Defaults & Constraints
     if result["action"] == "move" and result["direction"] is None:
         result["direction"] = "forward"
+    
+    if result["action"] == "rotate" and result["direction"] is None:
+        result["direction"] = "right" # Default turn direction
 
-    if result["action"] == "rotate" and result["direction"] is None and result["angle_deg"] is not None:
-        result["direction"] = "right"
-
-    if result["action"] == "move" and result["distance_cm"] is None and result["direction"]:
-        if re.search(r'\b(a bit|slightly|a little|little)\b', text):
-            result["distance_cm"] = 5.0
-        elif re.search(r'\b(far|further|a lot|more|long)\b', text):
-            result["distance_cm"] = 30.0
-        else:
-            result["distance_cm"] = 10.0
-
-    if result["action"] == "rotate" and result["angle_deg"] is None and result["direction"]:
-        if re.search(r'\b(a bit|slightly|a little|little)\b', text):
-            result["angle_deg"] = 15.0
-        elif re.search(r'\b(far|further|a lot|more|sharp|hard|big)\b', text):
-            result["angle_deg"] = 90.0
-        else:
-            result["angle_deg"] = 45.0
+    if result["action"] in ["grab", "release"]:
+        result["confidence"] = 0.9
 
     return result
 
 
 # ── AI parser (Claude via Anthropic API) ────────────────────────────────────
 
-SYSTEM_PROMPT = """You are the command parser for a robot arm controller called EchoArm.
+SYSTEM_PROMPT = """You are the command parser for a robot arm controller called OpenGuy.
 
 Your job is to read a natural language instruction and return ONLY a JSON object — no explanation, no markdown, just raw JSON.
 
@@ -109,6 +171,7 @@ The JSON must follow this schema:
   "direction":    string or null  — one of: "forward", "backward", "left", "right", "up", "down"
   "distance_cm":  number or null  — distance in centimetres (estimate if vague, e.g. "a bit" = 5)
   "angle_deg":    number or null  — rotation angle in degrees (estimate if vague, e.g. "slightly" = 15)
+  "speed":        number          — speed from 0.0 (gently) to 1.0 (rapidly), default 0.5
   "confidence":   number          — your confidence from 0.0 to 1.0
   "raw":          string          — the original input, unchanged
 }
@@ -164,10 +227,11 @@ def _ai_parse(text: str, api_key: Optional[str] = None) -> Optional[Dict[str, An
             raw_text = body["content"][0]["text"].strip()
             return json.loads(raw_text)
     except urllib.error.HTTPError as e:
-        print(f"[EchoArm] API error {e.code}: {e.read().decode()}")
+        # Don't print the whole response body to avoid spamming the logs
+        print(f"[OpenGuy] AI parse failed (API error {e.code})")
         return None
     except Exception as e:
-        print(f"[EchoArm] AI parse failed ({type(e).__name__}): {e}")
+        print(f"[OpenGuy] AI parse failed (Connection issue)")
         return None
 
 
@@ -196,6 +260,7 @@ def parse(
             "direction": None,
             "distance_cm": None,
             "angle_deg": None,
+            "speed": 0.5,
             "confidence": 0.0,
             "raw": ""
         }
@@ -204,10 +269,13 @@ def parse(
     api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
 
     if use_ai:
-        result = _ai_parse(text, api_key=api_key)
-        if result:
-            return result
-        print("[EchoArm] Falling back to regex parser.")
+        if not api_key:
+            print("[OpenGuy] Using regex parser (no API key configured)")
+        else:
+            result = _ai_parse(text, api_key=api_key)
+            if result:
+                return result
+            print("[OpenGuy] AI parse failed, using regex fallback")
 
     result = _regex_parse(text)
     if not result["action"] or result["action"] == "unknown":
@@ -236,7 +304,7 @@ if __name__ == "__main__":
         "drop it gently",
         "swing the arm way to the left",
     ]
-    print("EchoArm AI Parser — self-test\n" + "─" * 40)
+    print("OpenGuy AI Parser — self-test\n" + "─" * 40)
     for cmd in tests:
         result = parse(cmd)
         print(f"Input : {cmd}")
