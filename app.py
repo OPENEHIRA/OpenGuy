@@ -313,3 +313,13 @@ if __name__ == "__main__":
         print("[INFO] Set TWILIO_* env vars to enable WhatsApp bot")
 
     app.run(debug=True, host="0.0.0.0", port=5000)
+	
+
+
+@app.route("/api/arm/visualize", methods=["GET"])
+def api_arm_visualize():
+    from kinematics_visualizer import generate_arm_svg
+    x = float(request.args.get("x", 100))
+    y = float(request.args.get("y", 50))
+    svg = generate_arm_svg(x, y)
+    return svg, 200, {"Content-Type": "image/svg+xml"}
