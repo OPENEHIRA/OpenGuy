@@ -1146,7 +1146,11 @@
     <div class="card" style="animation-delay:0s">
       <div class="ch"><span class="clabel">Workspace</span><span class="pill p-cyan">2D VIEW</span></div>
       <div class="cb" style="padding:15px; text-align:center; color:var(--text-3); font-family:var(--mono); font-size:11px;">
-        LOCAL SIMULATOR ACTIVE (NO SERVER)
+        <div id="arm-viz" style="text-align:center;">
+          <img id="arm-img" src="/api/arm/visualize?x=100&y=50"
+               style="width:100%; max-width:300px;"
+               alt="Robot arm visualization"/>
+        </div>
       </div>
     </div>
     <div class="card" style="animation-delay:.05s">
