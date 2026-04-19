@@ -1145,12 +1145,48 @@
       return `<div class="cards">
     <div class="card" style="animation-delay:0s">
       <div class="ch"><span class="clabel">Workspace</span><span class="pill p-cyan">2D VIEW</span></div>
-      <div class="cb" style="padding:15px; text-align:center; color:var(--text-3); font-family:var(--mono); font-size:11px;">
-        <div id="arm-viz" style="text-align:center;">
-          <img id="arm-img" src="/api/arm/visualize?x=100&y=50"
-               style="width:100%; max-width:300px;"
-               alt="Robot arm visualization"/>
-        </div>
+      <div class="cb" style="padding:10px; text-align:center;">
+        <svg id="arm-svg" width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#1a1a1a" rx="8"/>
+          <line x1="150" y1="0" x2="150" y2="300" stroke="#333" stroke-width="1"/>
+          <line x1="0" y1="150" x2="300" y2="150" stroke="#333" stroke-width="1"/>
+          <line id="arm-l1" x1="150" y1="150" x2="250" y2="150" stroke="#00ff88" stroke-width="6" stroke-linecap="round"/>
+          <line id="arm-l2" x1="250" y1="150" x2="300" y2="150" stroke="#00ccff" stroke-width="4" stroke-linecap="round"/>
+          <circle id="arm-base" cx="150" cy="150" r="8" fill="#ffffff"/>
+          <circle id="arm-elbow" cx="250" cy="150" r="6" fill="#ffff00"/>
+          <circle id="arm-tip" cx="300" cy="150" r="5" fill="#ff4444"/>
+          <text id="arm-info" x="10" y="20" fill="#aaaaaa" font-size="11">Awaiting command...</text>
+        </svg>
+        <script>
+        function updateArm(distanceCm) {
+          var L1 = 100, L2 = 70;
+          var x = Math.min(distanceCm * 2, 180);
+          var y = 50;
+          var d = (x*x + y*y - L1*L1 - L2*L2) / (2*L1*L2);
+          if (Math.abs(d) > 1) return;
+          var t2 = Math.acos(d);
+          var t1 = Math.atan2(y, x) - Math.atan2(L2*Math.sin(t2), L1+L2*Math.cos(t2));
+          var cx = 150, cy = 150;
+          var x1 = cx + L1*Math.cos(t1);
+          var y1 = cy - L1*Math.sin(t1);
+          var x2 = x1 + L2*Math.cos(t1+t2);
+          var y2 = y1 - L2*Math.sin(t1+t2);
+          document.getElementById("arm-l1").setAttribute("x2", x1.toFixed(1));
+          document.getElementById("arm-l1").setAttribute("y2", y1.toFixed(1));
+          document.getElementById("arm-l2").setAttribute("x1", x1.toFixed(1));
+          document.getElementById("arm-l2").setAttribute("y1", y1.toFixed(1));
+          document.getElementById("arm-l2").setAttribute("x2", x2.toFixed(1));
+          document.getElementById("arm-l2").setAttribute("y2", y2.toFixed(1));
+          document.getElementById("arm-elbow").setAttribute("cx", x1.toFixed(1));
+          document.getElementById("arm-elbow").setAttribute("cy", y1.toFixed(1));
+          document.getElementById("arm-tip").setAttribute("cx", x2.toFixed(1));
+          document.getElementById("arm-tip").setAttribute("cy", y2.toFixed(1));
+          var deg1 = (t1*180/Math.PI).toFixed(1);
+          var deg2 = (t2*180/Math.PI).toFixed(1);
+          document.getElementById("arm-info").textContent = "J1: "+deg1+"  J2: "+deg2+"  dist: "+distanceCm+"cm";
+        }
+        window.updateArm = updateArm;
+        </script>
       </div>
     </div>
     <div class="card" style="animation-delay:.05s">
