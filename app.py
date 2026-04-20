@@ -5,6 +5,8 @@ Serves the HTML UI and provides REST API endpoints for parsing and simulation.
 
 import os
 import json
+import urllib.request
+import urllib.error
 from typing import Any, Dict
 from datetime import datetime
 from pathlib import Path
@@ -272,6 +274,57 @@ def not_found(error):
 def internal_error(error):
     """Handle 500 errors."""
     return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/groq-parse", methods=["POST"])
+def groq_parse():
+    """Proxy Groq API call to avoid CORS issues."""
+    data = request.get_json() or {}
+    command_text = data.get("command", "").strip()
+    api_key = data.get("api_key", "")
+
+    if not command_text:
+        return jsonify({"error": "Empty command"}), 400
+
+    if not api_key:
+        return jsonify({"action": "move", "direction": "forward", "distance_cm": 10, "confidence": 0.5, "raw": command_text})
+
+    try:
+        payload = {
+            "model": "llama3-8b-8192",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a robot arm command parser. Extract action, direction, and distance from commands. Respond ONLY with JSON like: {\"action\":\"move\",\"direction\":\"forward\",\"distance_cm\":10,\"confidence\":0.95}"
+                },
+                {
+                    "role": "user",
+                    "content": command_text
+                }
+            ],
+            "max_tokens": 100,
+            "temperature": 0.1
+        }
+
+        req = urllib.request.Request(
+            "https://api.groq.com/openai/v1/chat/completions",
+            data=json.dumps(payload).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
+            method="POST"
+        )
+
+        with urllib.request.urlopen(req, timeout=10) as response:
+            result = json.loads(response.read().decode())
+            raw = result["choices"][0]["message"]["content"].strip()
+            parsed = json.loads(raw)
+            parsed["raw"] = command_text
+            return jsonify(parsed)
+
+    except Exception as e:
+        return jsonify({"action": "move", "direction": "forward", "distance_cm": 10, "confidence": 0.5, "raw": command_text, "error": str(e)})
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
