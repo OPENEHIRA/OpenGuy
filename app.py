@@ -295,7 +295,7 @@ def groq_parse():
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a robot arm command parser. Extract action, direction, and distance from commands. Respond ONLY with JSON like: {"action":"move","direction":"forward","distance_cm":10,"confidence":0.95}"
+                    "content": "You are a robot arm command parser. Extract action, direction, and distance from commands. Respond ONLY with JSON like: {\"action\":\"move\",\"direction\":\"forward\",\"distance_cm\":10,\"confidence\":0.95}"
                 },
                 {
                     "role": "user",
