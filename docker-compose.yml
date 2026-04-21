@@ -10,6 +10,7 @@ services:
       FLASK_ENV: development
       ROBOT_MODE: simulator
       LOG_LEVEL: INFO
+      GROQ_API_KEY: ${GROQ_API_KEY}
     volumes:
       - ./robot_notes:/app/robot_notes
       - ./robot_learning:/app/robot_learning
