@@ -327,6 +327,40 @@ def groq_parse():
         return jsonify({"action": "move", "direction": "forward", "distance_cm": 10, "confidence": 0.5, "raw": command_text, "error": str(e)})
 
 
+@app.route("/api/gazebo/command", methods=["POST"])
+def gazebo_command():
+    """Send command to Gazebo via ROS2."""
+    try:
+        from gz_web import send_command_to_gazebo
+        data = request.get_json() or {}
+        result = send_command_to_gazebo(data)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/gazebo/status", methods=["GET"])
+def gazebo_status():
+    """Check if Gazebo and ROS2 are running."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["ros2", "topic", "list"],
+            capture_output=True,
+            text=True,
+            timeout=3
+        )
+        ros2_running = result.returncode == 0
+    except Exception:
+        ros2_running = False
+
+    return jsonify({
+        "ros2_running": ros2_running,
+        "gazebo_url": "http://localhost:9091",
+        "status": "ready" if ros2_running else "ROS2 not running"
+    })
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

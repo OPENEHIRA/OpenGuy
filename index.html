@@ -1207,6 +1207,15 @@
     <div class="card" style="animation-delay:0s">
       <div class="ch"><span class="clabel">Workspace</span><span class="pill p-cyan">2D VIEW</span></div>
       <div class="cb" style="padding:15px; text-align:center; color:var(--text-3); font-family:var(--mono); font-size:11px;">
+        <div id="gazebo-container" style="width:100%; display:none; border-radius:8px; overflow:hidden;">
+          <iframe
+            id="gazebo-frame"
+            src="http://localhost:9091"
+            style="width:100%; height:280px; border:none;"
+            title="Gazebo Simulation">
+          </iframe>
+          <p style="color:#555; font-size:10px; margin:4px; font-family:monospace;">Gazebo Physics Simulation</p>
+        </div>
         <svg width="280" height="200" xmlns="http://www.w3.org/2000/svg" id="armSvg">
           <rect width="100%" height="100%" fill="#0c0c0e" rx="8"/>
           <line x1="140" y1="0" x2="140" y2="200" stroke="#1a1a1a" stroke-width="1"/>
