@@ -15,19 +15,19 @@ We have massively simplified and optimized the architecture to be incredibly rob
 
 ## Running Locally
 
-> **Requires Python 3.10 – 3.13.** Do NOT use Python 3.14 or 3.15 — many packages don't have pre-built Windows wheels yet and will fail to install.
-> Download Python 3.12: https://www.python.org/downloads/release/python-3129/
+The smart installer handles everything — it checks for Python 3.12 and Git, installs them if missing, clones the repo, installs dependencies, and starts the server.
 
-1. **Install Backend Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+**Windows** (paste into PowerShell or CMD):
+```
+curl -o install.bat https://raw.githubusercontent.com/OPENEHIRA/OpenGuy/main/install.bat && install.bat
+```
 
-2. **Start the Server:**
-   ```bash
-   python server.py
-   ```
-   The backend will serve the single-file UI at `http://localhost:5000` automatically.
+**Mac / Linux** (paste into Terminal):
+```bash
+curl -sL https://raw.githubusercontent.com/OPENEHIRA/OpenGuy/main/install.sh | bash
+```
+
+The server will start automatically at `http://localhost:5000`.
 
 ## Hosting on Vercel
 Because the frontend is a single `index.html` file at the root of the repository, Vercel will deploy it automatically!

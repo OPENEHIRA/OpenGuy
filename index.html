@@ -182,7 +182,7 @@
       <section class="flex flex-col items-center text-center gap-8">
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-surface text-text-muted text-[11px] font-mono tracking-wider uppercase">
           <i data-lucide="terminal" class="w-3 h-3"></i>
-          Deploy Locally
+          One Command. Zero Setup.
         </div>
         
         <h1 class="font-display text-5xl md:text-7xl font-light tracking-tight leading-tight">
@@ -191,28 +191,45 @@
         </h1>
         
         <p class="text-text-muted text-lg max-w-2xl font-light leading-relaxed">
-          OpenGuy is engineered to run seamlessly on your local environment. Avoid cloud dependencies and API latency by deploying the core neural interface directly to your robotic hardware.
+          OpenGuy auto-installs everything it needs — Python, Git, dependencies — so you never have to. Just paste, run, and control your robot.
         </p>
 
-        <!-- Premium Terminal Block -->
+        <!-- Premium Terminal Block with OS Tabs -->
         <div class="w-full max-w-2xl premium-panel overflow-hidden mt-8 text-left group">
           <div class="bg-black/50 border-b border-border px-4 py-3 flex items-center justify-between">
-            <div class="mac-dots">
-              <div class="mac-dot close"></div>
-              <div class="mac-dot min"></div>
-              <div class="mac-dot max"></div>
+            <div class="flex items-center gap-4">
+              <div class="mac-dots">
+                <div class="mac-dot close"></div>
+                <div class="mac-dot min"></div>
+                <div class="mac-dot max"></div>
+              </div>
+              <div class="flex gap-1">
+                <button @click="activeTab = 'windows'" :class="['px-3 py-1 rounded text-[10px] font-mono tracking-wider uppercase transition-all', activeTab === 'windows' ? 'bg-white/10 text-white' : 'text-text-dim hover:text-text-muted']">Windows</button>
+                <button @click="activeTab = 'mac'" :class="['px-3 py-1 rounded text-[10px] font-mono tracking-wider uppercase transition-all', activeTab === 'mac' ? 'bg-white/10 text-white' : 'text-text-dim hover:text-text-muted']">Mac / Linux</button>
+              </div>
             </div>
-            <span class="text-xs font-mono text-text-dim">install.sh</span>
             <button @click="copyCode" class="text-text-muted hover:text-white transition-colors" title="Copy">
               <i v-if="copied" data-lucide="check" class="w-4 h-4"></i>
               <i v-else data-lucide="copy" class="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity"></i>
             </button>
           </div>
           <div class="p-6 overflow-x-auto bg-[#030303] custom-scrollbar">
-            <pre class="font-mono text-sm leading-relaxed text-text-muted whitespace-nowrap"><code class="text-white">git clone <span class="text-[#888888]">https://github.com/OPENEHIRA/OpenGuy.git</span> && cd <span class="text-[#888888]">OpenGuy</span> && pip install <span class="text-[#888888]">-r requirements.txt</span> && python <span class="text-[#888888]">server.py</span></code></pre>
+            <div v-if="activeTab === 'windows'">
+              <p class="text-[10px] font-mono text-text-dim uppercase tracking-widest mb-3">Paste into PowerShell or CMD</p>
+              <pre class="font-mono text-sm leading-relaxed text-text-muted whitespace-nowrap"><code class="text-white">curl <span class="text-[#888888]">-o install.bat https://raw.githubusercontent.com/OPENEHIRA/OpenGuy/main/install.bat</span> && <span class="text-white">install.bat</span></code></pre>
+            </div>
+            <div v-else>
+              <p class="text-[10px] font-mono text-text-dim uppercase tracking-widest mb-3">Paste into Terminal</p>
+              <pre class="font-mono text-sm leading-relaxed text-text-muted whitespace-nowrap"><code class="text-white">curl <span class="text-[#888888]">-sL https://raw.githubusercontent.com/OPENEHIRA/OpenGuy/main/install.sh</span> | <span class="text-white">bash</span></code></pre>
+            </div>
+          </div>
+          <div class="bg-black/30 border-t border-border px-4 py-2.5 flex items-center gap-2 text-[10px] font-mono text-text-dim">
+            <i data-lucide="info" class="w-3 h-3"></i>
+            Auto-installs Python 3.12, Git, and all dependencies if not found.
           </div>
         </div>
       </section>
+
 
       <!-- DIVIDER -->
       <div class="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
@@ -378,6 +395,7 @@
         const loading = ref(false);
         const isConnected = ref(false);
         const copied = ref(false);
+        const activeTab = ref('windows');
         let socket = null;
 
         const updateIcons = () => {
@@ -385,7 +403,9 @@
         };
 
         const copyCode = () => {
-          const code = `git clone https://github.com/OPENEHIRA/OpenGuy.git && cd OpenGuy && pip install -r requirements.txt && python server.py`;
+          const code = activeTab.value === 'windows'
+            ? `curl -o install.bat https://raw.githubusercontent.com/OPENEHIRA/OpenGuy/main/install.bat && install.bat`
+            : `curl -sL https://raw.githubusercontent.com/OPENEHIRA/OpenGuy/main/install.sh | bash`;
           navigator.clipboard.writeText(code);
           copied.value = true;
           setTimeout(() => copied.value = false, 2000);
@@ -489,6 +509,7 @@
           loading,
           isConnected,
           copied,
+          activeTab,
           copyCode,
           executeCommand,
           clearHistory,
