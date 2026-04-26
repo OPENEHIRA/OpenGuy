@@ -15,6 +15,9 @@ We have massively simplified and optimized the architecture to be incredibly rob
 
 ## Running Locally
 
+> **Requires Python 3.10 – 3.13.** Do NOT use Python 3.14 or 3.15 — many packages don't have pre-built Windows wheels yet and will fail to install.
+> Download Python 3.12: https://www.python.org/downloads/release/python-3129/
+
 1. **Install Backend Dependencies:**
    ```bash
    pip install -r requirements.txt
