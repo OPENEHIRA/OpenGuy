@@ -546,10 +546,10 @@
           robotBase.position.y = 0.15; scene.add(robotBase);
           const j1 = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), metalMat()); j1.position.y = 0.3; robotBase.add(j1);
           arm1 = new THREE.Group(); arm1.position.y = 0.3; robotBase.add(arm1);
-          arm1.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 0.12), metalMat()), { position: new THREE.Vector3(0, 0.6, 0) }));
+          const a1m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 0.12), metalMat()); a1m.position.y = 0.6; arm1.add(a1m);
           const j2 = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), accentMat()); j2.position.y = 1.2; arm1.add(j2);
           arm2 = new THREE.Group(); arm2.position.y = 1.2; arm1.add(arm2);
-          arm2.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), metalMat()), { position: new THREE.Vector3(0, 0.45, 0) }));
+          const a2m = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), metalMat()); a2m.position.y = 0.45; arm2.add(a2m);
           gripper = new THREE.Group(); gripper.position.y = 0.9; arm2.add(gripper);
           const gl = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.25, 0.08), gripMat()); gl.position.set(-0.08, 0.12, 0); gripper.add(gl);
           const gr = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.25, 0.08), gripMat()); gr.position.set(0.08, 0.12, 0); gripper.add(gr);
