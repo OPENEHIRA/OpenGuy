@@ -27,7 +27,27 @@ Because the frontend is a single `index.html` file at the root of the repository
 
 Once your Vercel URL is live, open it in your browser and use the **Backend URL** input at the top to point the UI to your local robot's IP or ngrok tunnel (e.g. `http://192.168.1.10:5000`).
 
-## API Key Setup
-To enable AI command parsing, set your Anthropic API Key:
-- Linux/Mac: `export ANTHROPIC_API_KEY="your-key-here"`
-- Windows: `set ANTHROPIC_API_KEY="your-key-here"`
+## Universal AI Provider Support
+OpenGuy uses `litellm`, meaning you can use **any API key on earth** (Groq, OpenAI, Anthropic, Gemini, etc.).
+
+By default, it will attempt to use a fast, free open-source model (`groq/llama3-8b-8192`) if you provide a Groq key. You can override this by setting the `LLM_MODEL` environment variable.
+
+**Examples (Windows):**
+```powershell
+# Using Groq (Default: llama3-8b-8192)
+set GROQ_API_KEY="your-groq-key"
+
+# Using OpenAI (GPT-4o)
+set OPENAI_API_KEY="your-openai-key"
+set LLM_MODEL="gpt-4o"
+
+# Using Anthropic (Claude 3 Haiku)
+set ANTHROPIC_API_KEY="your-anthropic-key"
+set LLM_MODEL="claude-3-haiku-20240307"
+```
+
+**Examples (Mac/Linux):**
+```bash
+export GROQ_API_KEY="your-groq-key"
+export LLM_MODEL="groq/llama3-8b-8192"
+```

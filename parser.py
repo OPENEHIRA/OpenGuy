@@ -196,42 +196,37 @@ Output: {"action":"grab","direction":null,"distance_cm":null,"angle_deg":null,"c
 """
 
 
-def _ai_parse(text: str, api_key: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def _ai_parse(text: str, model: str = "groq/llama3-8b-8192") -> Optional[Dict[str, Any]]:
     """
-    Calls Claude (Haiku, for speed) to parse the command.
+    Calls an LLM via LiteLLM to parse the command.
     Returns a parsed dict, or None if the call fails.
     """
-    payload = json.dumps({
-        "model": "claude-haiku-4-5-20251001",
-        "max_tokens": 256,
-        "system": SYSTEM_PROMPT,
-        "messages": [{"role": "user", "content": text}]
-    }).encode("utf-8")
-
-    headers = {
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
-    }
-    if api_key:
-        headers["x-api-key"] = api_key
-
     try:
-        req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages",
-            data=payload,
-            headers=headers,
-            method="POST"
+        import litellm
+        # Attempt to enforce JSON if supported by model name heuristics
+        response_format = {"type": "json_object"} if ("gpt" in model or "groq" in model) else None
+        
+        # We rely on litellm picking up API keys from os.environ
+        response = litellm.completion(
+            model=model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": text}
+            ],
+            response_format=response_format,
+            max_tokens=256,
+            temperature=0.0
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-            raw_text = body["content"][0]["text"].strip()
-            return json.loads(raw_text)
-    except urllib.error.HTTPError as e:
-        # Don't print the whole response body to avoid spamming the logs
-        print(f"[OpenGuy] AI parse failed (API error {e.code})")
-        return None
+        raw_text = response.choices[0].message.content.strip()
+        # Clean markdown code blocks if the model didn't respect raw JSON
+        if raw_text.startswith("```json"):
+            raw_text = raw_text.replace("```json", "").replace("```", "").strip()
+        elif raw_text.startswith("```"):
+            raw_text = raw_text.replace("```", "").strip()
+
+        return json.loads(raw_text)
     except Exception as e:
-        print(f"[OpenGuy] AI parse failed (Connection issue)")
+        print(f"[OpenGuy] AI parse failed: {e}")
         return None
 
 
@@ -239,7 +234,6 @@ def _ai_parse(text: str, api_key: Optional[str] = None) -> Optional[Dict[str, An
 
 def parse(
     text: str, 
-    api_key: Optional[str] = None, 
     use_ai: bool = True
 ) -> Dict[str, Any]:
     """
@@ -247,7 +241,6 @@ def parse(
 
     Args:
         text     : The user's input string.
-        api_key  : Optional Anthropic API key. Falls back to ANTHROPIC_API_KEY env var.
         use_ai   : Set False to force regex-only mode (offline testing).
 
     Returns a dict with keys:
@@ -265,14 +258,15 @@ def parse(
             "raw": ""
         }
 
-    # Try API key from param, then environment
-    api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
-
     if use_ai:
-        if not api_key:
-            print("[OpenGuy] Using regex parser (no API key configured)")
+        keys = ["GROQ_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"]
+        has_key = any(os.getenv(k) for k in keys)
+        
+        if not has_key:
+            print("[OpenGuy] Using regex parser (No API keys found in environment)")
         else:
-            result = _ai_parse(text, api_key=api_key)
+            model = os.getenv("LLM_MODEL", "groq/llama3-8b-8192")
+            result = _ai_parse(text, model=model)
             if result:
                 return result
             print("[OpenGuy] AI parse failed, using regex fallback")

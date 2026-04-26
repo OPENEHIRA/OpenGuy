@@ -61,7 +61,7 @@ async def api_parse(request: Request):
     if not command_text:
         raise HTTPException(status_code=400, detail="Empty command")
     try:
-        parsed = parse(command_text, api_key=api_key, use_ai=True)
+        parsed = parse(command_text, use_ai=True)
         return parsed
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Parse error: {str(e)}")
@@ -160,7 +160,7 @@ async def api_chain_parse(request: Request):
     if not command_text:
         raise HTTPException(status_code=400, detail="Empty command")
     try:
-        result = parse_command_chain(command_text, api_key=api_key)
+        result = parse_command_chain(command_text)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chain parse error: {str(e)}")

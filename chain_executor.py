@@ -16,7 +16,7 @@ class CommandChain:
         self.commands: List[Dict[str, Any]] = []
         self.results: List[Dict[str, Any]] = []
     
-    def parse_chain(self, text: str, api_key: Optional[str] = None) -> List[Dict[str, Any]]:
+    def parse_chain(self, text: str) -> List[Dict[str, Any]]:
         """
         Parse a chain of commands separated by 'and', 'then', '&', or commas.
         Examples:
@@ -40,7 +40,7 @@ class CommandChain:
         
         # If only one command, no chain needed
         if len(command_texts) == 1:
-            parsed = parse(command_texts[0], api_key=api_key, use_ai=True)
+            parsed = parse(command_texts[0], use_ai=True)
             parsed['_chain_step'] = 0
             parsed['_chain_total'] = 1
             self.commands = [parsed]
@@ -48,7 +48,7 @@ class CommandChain:
         
         # Parse each command in the chain
         for i, cmd_text in enumerate(command_texts):
-            parsed = parse(cmd_text, api_key=api_key, use_ai=True)
+            parsed = parse(cmd_text, use_ai=True)
             parsed['_chain_step'] = i
             parsed['_chain_total'] = len(command_texts)
             self.commands.append(parsed)
@@ -92,9 +92,9 @@ class CommandChain:
 _chain = CommandChain()
 
 
-def parse_command_chain(text: str, api_key: Optional[str] = None) -> Dict[str, Any]:
+def parse_command_chain(text: str) -> Dict[str, Any]:
     """Parse a command chain and return all commands."""
-    commands = _chain.parse_chain(text, api_key=api_key)
+    commands = _chain.parse_chain(text)
     return {
         "is_chain": len(commands) > 1,
         "commands": commands,

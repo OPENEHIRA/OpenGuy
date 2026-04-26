@@ -9,3 +9,4 @@ gunicorn>=21.0
 python-dotenv>=1.0
 twilio>=8.10.0
 python-telegram-bot>=20.0
+litellm 
