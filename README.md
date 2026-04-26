@@ -37,11 +37,11 @@ Once your Vercel URL is live, open it in your browser and use the **Backend URL*
 ## Universal AI Provider Support
 OpenGuy uses `litellm`, meaning you can use **any API key on earth** (Groq, OpenAI, Anthropic, Gemini, etc.).
 
-By default, it will attempt to use a fast, free open-source model (`groq/llama3-8b-8192`) if you provide a Groq key. You can override this by setting the `LLM_MODEL` environment variable.
+By default, it will attempt to use a fast, free open-source model (`groq/llama-3.3-70b-versatile`) if you provide a Groq key. You can override this by setting the `LLM_MODEL` environment variable.
 
 **Examples (Windows):**
 ```powershell
-# Using Groq (Default: llama3-8b-8192)
+# Using Groq (Default: llama-3.3-70b-versatile)
 set GROQ_API_KEY="your-groq-key"
 
 # Using OpenAI (GPT-4o)
@@ -56,5 +56,5 @@ set LLM_MODEL="claude-3-haiku-20240307"
 **Examples (Mac/Linux):**
 ```bash
 export GROQ_API_KEY="your-groq-key"
-export LLM_MODEL="groq/llama3-8b-8192"
+export LLM_MODEL="groq/llama-3.3-70b-versatile"
 ```

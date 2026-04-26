@@ -212,7 +212,7 @@ Output: {"action":"grab","direction":null,"distance_cm":null,"angle_deg":null,"c
 """
 
 
-def _ai_parse(text: str, model: str = "groq/llama3-8b-8192") -> Optional[Dict[str, Any]]:
+def _ai_parse(text: str, model: str = "groq/llama-3.3-70b-versatile") -> Optional[Dict[str, Any]]:
     """
     Calls an LLM via LiteLLM to parse the command.
     Returns a parsed dict, or None if the call fails.
@@ -281,7 +281,7 @@ def parse(
         if not has_key:
             print("[OpenGuy] Using regex parser (No API keys found in environment)")
         else:
-            model = os.getenv("LLM_MODEL", "groq/llama3-8b-8192")
+            model = os.getenv("LLM_MODEL", "groq/llama-3.3-70b-versatile")
             result = _ai_parse(text, model=model)
             if result:
                 return result
