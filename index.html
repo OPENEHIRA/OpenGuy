@@ -235,6 +235,36 @@
       </section>
 
 
+      <!-- VERCEL GUIDE (only shown when NOT local) -->
+      <section v-if="!isLocal" class="flex flex-col gap-8">
+        <div class="premium-panel p-8 flex flex-col gap-6 text-center">
+          <div class="flex justify-center">
+            <div class="w-16 h-16 rounded-full bg-white/5 border border-border flex items-center justify-center">
+              <i data-lucide="monitor" class="w-8 h-8 text-text-muted"></i>
+            </div>
+          </div>
+          <h2 class="font-display text-3xl font-light tracking-tight">Run Locally for Full Experience</h2>
+          <p class="text-text-muted text-sm max-w-2xl mx-auto font-light leading-relaxed">
+            The Command Center, AI Configuration, and 3D Simulation Lab require a local server running on your machine.
+            This page is a preview — to control robots and see the simulation, run the installer below.
+          </p>
+          <div class="flex flex-col gap-3 max-w-lg mx-auto w-full">
+            <div class="premium-panel p-4 rounded-xl text-left">
+              <p class="text-[10px] font-mono text-text-dim uppercase tracking-widest mb-2">Windows (PowerShell or CMD)</p>
+              <code class="text-sm font-mono text-white">curl -o install.bat https://raw.githubusercontent.com/OPENEHIRA/OpenGuy/main/install.bat && install.bat</code>
+            </div>
+            <div class="premium-panel p-4 rounded-xl text-left">
+              <p class="text-[10px] font-mono text-text-dim uppercase tracking-widest mb-2">Mac / Linux / Git Bash</p>
+              <code class="text-sm font-mono text-white">curl -sL https://raw.githubusercontent.com/OPENEHIRA/OpenGuy/main/install.sh | bash</code>
+            </div>
+          </div>
+          <p class="text-text-dim text-xs font-mono">After running, open <span class="text-white">http://localhost:5000</span> for the full experience.</p>
+        </div>
+      </section>
+
+      <!-- LOCAL-ONLY SECTIONS -->
+      <template v-if="isLocal">
+
       <!-- DIVIDER -->
       <div class="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
 
@@ -464,6 +494,8 @@
           </div>
         </div>
       </section>
+
+      </template> <!-- end isLocal -->
     </main>
 
     <!-- Footer -->
@@ -709,25 +741,37 @@
             if (robotBase) {
               const a = parsed.action;
               const d = parsed.distance_cm || 10;
+              const delta = Math.min(d * 0.05, 3); // Big visible movement, capped at 3 units
               if (a === 'move') {
                 const dir = parsed.direction || 'forward';
-                const delta = d * 0.01;
-                if (dir === 'forward') robotBase.position.x += delta;
-                else if (dir === 'backward') robotBase.position.x -= delta;
-                else if (dir === 'left') robotBase.position.z -= delta;
-                else if (dir === 'right') robotBase.position.z += delta;
+                // Move the robot
+                if (dir === 'forward') robotBase.position.z -= delta;
+                else if (dir === 'backward') robotBase.position.z += delta;
+                else if (dir === 'left') robotBase.position.x -= delta;
+                else if (dir === 'right') robotBase.position.x += delta;
                 else if (dir === 'up') robotBase.position.y += delta;
-                else if (dir === 'down') robotBase.position.y -= delta;
-                if (arm1 && activeRobot.value === 'arm') arm1.rotation.z += 0.3;
+                else if (dir === 'down') robotBase.position.y = Math.max(0.15, robotBase.position.y - delta);
+                // Per-robot visual feedback
+                if (activeRobot.value === 'arm') { if (arm1) arm1.rotation.z += 0.4; }
+                else if (activeRobot.value === 'robodog') {
+                  // Wiggle legs
+                  if (arm1) arm1.children.forEach((c, i) => { c.position.y += (i % 2 === 0 ? 0.05 : -0.05); });
+                }
+                else if (activeRobot.value === 'drone') {
+                  // Tilt in direction of movement
+                  robotBase.rotation.x = dir === 'forward' ? -0.3 : dir === 'backward' ? 0.3 : 0;
+                  robotBase.rotation.z = dir === 'left' ? 0.3 : dir === 'right' ? -0.3 : 0;
+                  setTimeout(() => { robotBase.rotation.x = 0; robotBase.rotation.z = 0; }, 500);
+                }
               } else if (a === 'rotate') {
                 const angle = (parsed.angle_deg || 45) * Math.PI / 180;
                 robotBase.rotation.y += (parsed.direction === 'left' ? -angle : angle);
-              } else if (a === 'grab' && gripper && activeRobot.value === 'arm') {
+              } else if (a === 'grab' && activeRobot.value === 'arm' && gripper) {
                 gripper.children.forEach((c, i) => { c.position.x = i === 0 ? -0.03 : 0.03; });
-              } else if (a === 'release' && gripper && activeRobot.value === 'arm') {
+              } else if (a === 'release' && activeRobot.value === 'arm' && gripper) {
                 gripper.children.forEach((c, i) => { c.position.x = i === 0 ? -0.12 : 0.12; });
               } else if (a === 'stop') {
-                robotBase.position.set(0, activeRobot.value === 'drone' ? 0 : 0.15, 0);
+                robotBase.position.set(0, activeRobot.value === 'drone' ? 1.5 : 0.15, 0);
                 robotBase.rotation.set(0, 0, 0);
               }
             }
@@ -770,14 +814,16 @@
 
         onMounted(() => {
           updateIcons();
-          connectSocket();
-          loadHistory();
-          nextTick(() => init3D());
+          if (isLocal) {
+            connectSocket();
+            loadHistory();
+            nextTick(() => init3D());
+          }
         });
 
         return {
           backendUrl, command, history, status, loading,
-          isConnected, copied, activeTab,
+          isConnected, copied, activeTab, isLocal,
           showConfig, showKey, aiProvider, aiApiKey, aiModel, hasApiKey,
           activeRobot, robotTemplates,
           saveConfig, copyCode, executeCommand, clearHistory, connectSocket, switchRobot
